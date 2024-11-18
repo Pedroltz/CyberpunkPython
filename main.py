@@ -8,12 +8,11 @@ import textwrap
 class CyberpunkPuzzle:
     def __init__(self):
         # Configurações do jogo
-        self.max_attempts = 5
+        self.max_attempts = 3  # Reduzido para 3 tentativas
         self.target_code = self.generate_complex_code()
         self.attempts = 0
         self.difficulty_multiplier = 1.5
         self.code_revealed = False
-        self.alternate_codes = self.generate_alternate_codes()
         
         # Sons
         self.sounds = {
@@ -34,14 +33,14 @@ class CyberpunkPuzzle:
         ])
         return code
     
-    def generate_alternate_codes(self):
-        """Gera códigos alternativos para escolha"""
-        alt_codes = [self.target_code]
-        while len(alt_codes) < 2:
-            alternate = self.generate_complex_code()
-            if alternate != self.target_code and alternate not in alt_codes:
-                alt_codes.append(alternate)
-        return alt_codes
+    def generate_fake_codes(self):
+        """Gera 4 códigos aleatórios diferentes"""
+        codes = []
+        while len(codes) < 4:
+            new_code = self.generate_complex_code()
+            if new_code not in codes:  # Garante que não há códigos duplicados
+                codes.append(new_code)
+        return codes
     
     def play_sound(self, sound_type):
         """Reproduz efeito sonoro em thread separada"""
@@ -93,30 +92,36 @@ class CyberpunkPuzzle:
             # Encontra o maior número nos dados
             max_dado = max(resultados) if resultados else 0
             
-            # Se o maior dado for 5, revela dois códigos
+            # Se o maior dado for 5, mostra 4 códigos aleatórios
             if max_dado == 5:
                 self.play_sound('success')
-                self.code_revealed = True
-                self.typing_effect(">>> CÓDIGOS REVELADOS <<<", delay=0.05, color="\033[92m")
+                self.typing_effect(">>> CÓDIGOS DETECTADOS <<<", delay=0.05, color="\033[92m")
                 
-                # Mostra os dois códigos gerados
-                print("\033[93mCÓDIGOS DISPONÍVEIS:\033[0m")
-                for i, code in enumerate(self.alternate_codes, 1):
+                fake_codes = self.generate_fake_codes()
+                print("\033[93mCÓDIGOS ENCONTRADOS:\033[0m")
+                for i, code in enumerate(fake_codes, 1):
                     print(f"{i}. {code}")
                 
                 return True
-            # Se o maior dado for menor que 5, falha automaticamente
-            elif max_dado < 5:
-                self.play_sound('error')
-                self.glitch_effect()
-                self.typing_effect(">>> TESTE DE PERÍCIA FALHOU <<<", delay=0.05, color="\033[91m")
-                return False
-            # Se o maior dado for 6, permite tentativa normal
-            else:
+            # Se o maior dado for 6, revela o código correto
+            elif max_dado == 6:
                 self.play_sound('success')
                 self.code_revealed = True
-                self.typing_effect(">>> CÓDIGO REVELADO <<<", delay=0.05, color="\033[92m")
+                self.typing_effect(">>> CÓDIGO CORRETO REVELADO <<<", delay=0.05, color="\033[92m")
+                print(f"\033[92mCódigo correto: {self.target_code}\033[0m")
                 return True
+            else:
+                self.attempts += 1
+                self.play_sound('error')
+                self.glitch_effect()
+                self.typing_effect(f">>> TESTE DE PERÍCIA FALHOU <<< [{self.max_attempts - self.attempts} TENTATIVAS RESTANTES]", 
+                                 delay=0.05, color="\033[91m")
+                
+                if self.attempts >= self.max_attempts:
+                    self.defeat()
+                    return False
+                    
+                return False
         except ValueError:
             self.typing_effect("Entrada inválida. Use um número inteiro.", delay=0.05, color="\033[91m")
             return False
@@ -131,14 +136,11 @@ class CyberpunkPuzzle:
         time.sleep(0.5)
         
         while self.attempts < self.max_attempts:
-            # Mostra código como **** se não revelado
-            display_code = self.target_code if self.code_revealed else '*' * len(self.target_code)
-            
             descricao_regras = textwrap.dedent(f"""
             PARAMETROS DO SISTEMA:
-            - DECIFRAR CÓDIGO NEURAL: {display_code}
             - TENTATIVAS MÁXIMAS: {self.max_attempts}
             - COMPLEXIDADE: NIVEL ULTRA
+            - TENTATIVAS RESTANTES: {self.max_attempts - self.attempts}
             """)
             self.typing_effect(descricao_regras, delay=0.03, color="\033[96m")
             
@@ -153,24 +155,14 @@ class CyberpunkPuzzle:
                 escolha = input("\n\033[97m>> SELECIONE UMA OPÇÃO (1/2): \033[0m").strip()
                 
                 if escolha == '1':
-                    test_result = self.roll_skill_test()
+                    if not self.roll_skill_test() and self.attempts >= self.max_attempts:
+                        return
                 elif escolha == '2':
-                    # Só permite tentar decifrar se o código foi revelado
-                    if not self.code_revealed:
-                        self.play_sound('error')
-                        self.typing_effect("CÓDIGO AINDA NÃO REVELADO. REALIZE O TESTE DE PERÍCIA PRIMEIRO.", delay=0.05, color="\033[91m")
-                        continue
-                    
                     tentativa = input("\n\033[97m>> INSIRA CÓDIGO DE ACESSO: \033[0m").upper().strip()
                     self.attempts += 1
                     
-                    # Se o código for igual a qualquer um dos códigos revelados, permite acesso
-                    if tentativa in self.alternate_codes:
-                        if tentativa == self.target_code:
-                            self.victory()
-                        else:
-                            # Se o código não for o verdadeiro, chama a tela de derrota
-                            self.defeat()
+                    if tentativa == self.target_code:
+                        self.victory()
                         return
                     else:
                         self.play_sound('error')
@@ -186,8 +178,10 @@ class CyberpunkPuzzle:
             
             except Exception as e:
                 self.typing_effect(f"ERRO CRÍTICO: {str(e)}", delay=0.05, color="\033[91m")
-        
-        self.defeat()
+            
+            if self.attempts >= self.max_attempts:
+                self.defeat()
+                return
     
     def clear_screen(self):
         """Limpa a tela do console"""
@@ -224,8 +218,7 @@ class CyberpunkPuzzle:
         self.play_sound('failure')
         self.clear_screen()
         
-        # Tela de interceptação do firewall
-        firewall_screen = textwrap.dedent("""
+        firewall_screen = textwrap.dedent(f"""
         ██████████████████████████████████████████
         █ SISTEMA DE SEGURANÇA NEURAL - FIREWALL █
         ██████████████████████████████████████████
@@ -235,6 +228,7 @@ class CyberpunkPuzzle:
         STATUS: INVASÃO BLOQUEADA
         ORIGEM DA TENTATIVA: [ENDEREÇO IP CENSURADO]
         NIVEL DE AMEAÇA: CRÍTICO
+        CÓDIGO CORRETO ERA: {self.target_code}
         
         AÇÕES AUTOMÁTICAS:
         - RASTREAMENTO DE ORIGEM INICIADO
@@ -248,14 +242,12 @@ class CyberpunkPuzzle:
         FIREWALL STATUS: 🔒 BLOQUEIO TOTAL 🔒
         """)
         
-        # Efeito de digitação na tela de firewall
         print("\033[91m")
         for line in firewall_screen.split('\n'):
             self.typing_effect(line, delay=0.02, color="\033[91m")
             time.sleep(0.1)
         print("\033[0m")
         
-        # Efeitos adicionais
         self.glitch_effect(10)
         time.sleep(1)
         self.typing_effect(">>> INVASÃO NEUTRALIZADA <<<", delay=0.05, color="\033[91m")
