@@ -8,12 +8,11 @@ import textwrap
 class CyberpunkPuzzle:
     def __init__(self):
         # Configurações do jogo
-        self.max_attempts = 3
+        self.max_attempts = 3  # Reduzido para 3 tentativas
         self.target_code = self.generate_complex_code()
         self.attempts = 0
         self.difficulty_multiplier = 1.5
         self.code_revealed = False
-        self.displayed_codes = []  # Lista para armazenar códigos revelados
         
         # Sons
         self.sounds = {
@@ -93,22 +92,24 @@ class CyberpunkPuzzle:
             # Encontra o maior número nos dados
             max_dado = max(resultados) if resultados else 0
             
+            # Se o maior dado for 5, mostra 4 códigos aleatórios
             if max_dado == 5:
                 self.play_sound('success')
-                fake_codes = self.generate_fake_codes()
-                self.displayed_codes.extend(fake_codes)
                 self.typing_effect(">>> CÓDIGOS DETECTADOS <<<", delay=0.05, color="\033[92m")
-                self.show_codes()
+                
+                fake_codes = self.generate_fake_codes()
+                print("\033[93mCÓDIGOS ENCONTRADOS:\033[0m")
+                for i, code in enumerate(fake_codes, 1):
+                    print(f"{i}. {code}")
+                
                 return True
-            
+            # Se o maior dado for 6, revela o código correto
             elif max_dado == 6:
                 self.play_sound('success')
                 self.code_revealed = True
                 self.typing_effect(">>> CÓDIGO CORRETO REVELADO <<<", delay=0.05, color="\033[92m")
                 print(f"\033[92mCódigo correto: {self.target_code}\033[0m")
-                self.displayed_codes.append(self.target_code)
                 return True
-            
             else:
                 self.attempts += 1
                 self.play_sound('error')
@@ -125,25 +126,16 @@ class CyberpunkPuzzle:
             self.typing_effect("Entrada inválida. Use um número inteiro.", delay=0.05, color="\033[91m")
             return False
     
-    def show_codes(self):
-        """Mostra os códigos na página inicial"""
-        print("\033[93mCÓDIGOS ENCONTRADOS ATÉ AGORA:\033[0m")
-        for code in self.displayed_codes:
-            print(f"- {code}")
-    
     def start_puzzle(self):
         """Inicia o puzzle cyberpunk"""
         self.play_sound('startup')
-        self.reset_game_state()
+        self.clear_screen()
+        self.cyberpunk_header()
+        
+        self.typing_effect("INICIANDO PROTOCOLO DE QUEBRA-CABEÇA NEURAL", delay=0.05, color="\033[94m")
+        time.sleep(0.5)
         
         while self.attempts < self.max_attempts:
-            self.clear_screen()
-            self.cyberpunk_header()
-            self.show_codes()  # Mantém os códigos visíveis na tela inicial
-            
-            self.typing_effect("INICIANDO PROTOCOLO DE QUEBRA-CABEÇA NEURAL", delay=0.05, color="\033[94m")
-            time.sleep(0.5)
-            
             descricao_regras = textwrap.dedent(f"""
             PARAMETROS DO SISTEMA:
             - TENTATIVAS MÁXIMAS: {self.max_attempts}
@@ -175,6 +167,7 @@ class CyberpunkPuzzle:
                     else:
                         self.play_sound('error')
                         self.glitch_effect()
+                        
                         erro_msgs = [
                             f"DECRYPT FALHOU. CÓDIGO INCORRETO. [{self.max_attempts - self.attempts} TENTATIVAS]",
                             f"ACESSO NEGADO. PADRÃO NÃO RECONHECIDO. [{self.max_attempts - self.attempts} RESTANTES]"
@@ -189,13 +182,6 @@ class CyberpunkPuzzle:
             if self.attempts >= self.max_attempts:
                 self.defeat()
                 return
-    
-    def reset_game_state(self):
-        """Reseta o estado do jogo para uma nova partida"""
-        self.target_code = self.generate_complex_code()
-        self.attempts = 0
-        self.code_revealed = False
-        self.displayed_codes = []
     
     def clear_screen(self):
         """Limpa a tela do console"""
@@ -213,30 +199,84 @@ class CyberpunkPuzzle:
         self.play_sound('success')
         self.clear_screen()
         self.cyberpunk_header()
+        
         self.typing_effect(">>> ACESSO CONCEDIDO <<<", delay=0.05, color="\033[92m")
         time.sleep(0.5)
+        
         vitoria_msg = textwrap.dedent(f"""
         RELATÓRIO DE OPERAÇÃO:
         - CÓDIGO DECIFRADO EM {self.attempts} TENTATIVAS
-        - SEGURANÇA DE SISTEMA COMPROMETIDA
+        - SEGURANÇA NEURAL BYPASSED
+        - NIVEL DE SUCESSO: MÁXIMO
         """)
-        self.typing_effect(vitoria_msg, delay=0.05, color="\033[96m")
+        self.typing_effect(vitoria_msg, delay=0.03, color="\033[96m")
+        
+        self.glitch_effect(5)
     
     def defeat(self):
-        """Sequência de derrota"""
+        """Sequência de derrota com tela de firewall"""
         self.play_sound('failure')
         self.clear_screen()
-        self.cyberpunk_header()
-        self.typing_effect(">>> ACESSO NEGADO <<<", delay=0.05, color="\033[91m")
-        self.typing_effect(">>> TENTATIVAS EXCEDIDAS <<<", delay=0.05, color="\033[91m")
-        time.sleep(1)
-        derrota_msg = textwrap.dedent(f"""
-        RELATÓRIO DE OPERAÇÃO:
-        - OPERAÇÃO FALHOU
-        - SEGURANÇA NEURAL ATIVADA
+        
+        firewall_screen = textwrap.dedent(f"""
+        ██████████████████████████████████████████
+        █ SISTEMA DE SEGURANÇA NEURAL - FIREWALL █
+        ██████████████████████████████████████████
+        
+        >>> INTRUSÃO DETECTADA <<<
+        
+        STATUS: INVASÃO BLOQUEADA
+        ORIGEM DA TENTATIVA: [ENDEREÇO IP CENSURADO]
+        NIVEL DE AMEAÇA: CRÍTICO
+        CÓDIGO CORRETO ERA: {self.target_code}
+        
+        AÇÕES AUTOMÁTICAS:
+        - RASTREAMENTO DE ORIGEM INICIADO
+        - PROTOCOLO DE CONTRA-ATAQUE ATIVADO
+        - REGISTRO DE INVASÃO ARQUIVADO
+        
+        MENSAGEM DO SISTEMA:
+        SUA TENTATIVA DE INVASÃO FOI REGISTRADA 
+        E SERÁ PROCESSADA PELAS AUTORIDADES DIGITAIS.
+        
+        FIREWALL STATUS: 🔒 BLOQUEIO TOTAL 🔒
         """)
-        self.typing_effect(derrota_msg, delay=0.05, color="\033[96m")
+        
+        print("\033[91m")
+        for line in firewall_screen.split('\n'):
+            self.typing_effect(line, delay=0.02, color="\033[91m")
+            time.sleep(0.1)
+        print("\033[0m")
+        
+        self.glitch_effect(10)
+        time.sleep(1)
+        self.typing_effect(">>> INVASÃO NEUTRALIZADA <<<", delay=0.05, color="\033[91m")
 
-# Inicia o jogo
+def main():
+    while True:
+        puzzle = CyberpunkPuzzle()
+        puzzle.start_puzzle()
+        
+        rejogar = input("\033[97m>> REINICIAR PROTOCOLO? (S/N): \033[0m").strip().upper()
+        if rejogar != 'S':
+            puzzle.typing_effect(">>> ENCERRANDO SISTEMA NEURAL <<<", delay=0.05, color="\033[94m")
+            break
+
 if __name__ == "__main__":
-    CyberpunkPuzzle().start_puzzle()
+    try:
+        import playsound
+    except ImportError:
+        print("Instalando dependências necessárias...")
+        import subprocess
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'playsound'])
+    
+    if not os.path.exists('sons'):
+        os.mkdir('sons')
+        print("AVISO: Pasta 'sons' criada. Adicione os arquivos de som:")
+        print("- startup.wav")
+        print("- typing.wav")
+        print("- error.wav")
+        print("- success.wav")
+        print("- failure.wav")
+    
+    main()
