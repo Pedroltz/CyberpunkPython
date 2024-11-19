@@ -129,13 +129,15 @@ class CyberpunkPuzzle:
     def start_puzzle(self):
         """Inicia o puzzle cyberpunk"""
         self.play_sound('startup')
-        self.clear_screen()
-        self.cyberpunk_header()
-        
-        self.typing_effect("INICIANDO PROTOCOLO DE QUEBRA-CABEÇA NEURAL", delay=0.05, color="\033[94m")
-        time.sleep(0.5)
+        self.reset_game_state()  # Nova função para resetar o estado do jogo
         
         while self.attempts < self.max_attempts:
+            self.clear_screen()  # Limpa a tela no início de cada iteração
+            self.cyberpunk_header()
+            
+            self.typing_effect("INICIANDO PROTOCOLO DE QUEBRA-CABEÇA NEURAL", delay=0.05, color="\033[94m")
+            time.sleep(0.5)
+            
             descricao_regras = textwrap.dedent(f"""
             PARAMETROS DO SISTEMA:
             - TENTATIVAS MÁXIMAS: {self.max_attempts}
@@ -182,6 +184,12 @@ class CyberpunkPuzzle:
             if self.attempts >= self.max_attempts:
                 self.defeat()
                 return
+    
+    def reset_game_state(self):
+        """Reseta o estado do jogo para uma nova partida"""
+        self.target_code = self.generate_complex_code()
+        self.attempts = 0
+        self.code_revealed = False
     
     def clear_screen(self):
         """Limpa a tela do console"""
